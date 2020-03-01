@@ -19,6 +19,7 @@ package com.android.systemui.statusbar.phone;
 import static com.android.systemui.SysUiServiceProvider.getComponent;
 import static com.android.systemui.statusbar.notification.ActivityLaunchAnimator.ExpandAnimationParameters;
 import static com.android.systemui.statusbar.notification.stack.NotificationStackScrollLayout.ROWS_ALL;
+import static com.android.systemui.statusbar.notification.stack.NotificationStackScrollLayout.ROWS_HIGH_PRIORITY;
 import static com.android.systemui.util.InjectionInflationController.VIEW_CONTEXT;
 
 import android.animation.Animator;
@@ -26,7 +27,9 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.app.ActivityManager;
 import android.app.Fragment;
+import android.app.Notification;
 import android.app.StatusBarManager;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
@@ -42,6 +45,7 @@ import android.graphics.Region;
 import android.hardware.biometrics.BiometricSourceType;
 import android.os.PowerManager;
 import android.os.SystemClock;
+import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -66,6 +70,7 @@ import com.android.systemui.DejankUtils;
 import com.android.systemui.Dependency;
 import com.android.systemui.Interpolators;
 import com.android.systemui.R;
+import com.android.systemui.doze.DozeLog;
 import com.android.systemui.fragments.FragmentHostManager;
 import com.android.systemui.fragments.FragmentHostManager.FragmentListener;
 import com.android.systemui.plugins.FalsingManager;
@@ -105,6 +110,8 @@ import com.android.systemui.statusbar.policy.OnHeadsUpChangedListener;
 import com.android.systemui.statusbar.policy.ZenModeController;
 import com.android.systemui.util.InjectionInflationController;
 
+import com.android.systemui.aospa.NotificationLightsView;
+
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -125,6 +132,9 @@ public class NotificationPanelView extends PanelView implements
         NotificationWakeUpCoordinator.WakeUpListener {
 
     private static final boolean DEBUG = false;
+    private static final boolean DEBUG_PULSE_LIGHT = false;
+
+    private static final String TAG = "NotificationLightsView";
 
     /**
      * Fling expanding QS.
@@ -329,6 +339,9 @@ public class NotificationPanelView extends PanelView implements
     private FalsingManager mFalsingManager;
     private String mLastCameraLaunchSource = KeyguardBottomAreaView.CAMERA_LAUNCH_SOURCE_AFFORDANCE;
 
+    // AOSPA additions
+    private NotificationLightsView mPulseLightsView;
+
     private Runnable mHeadsUpExistenceChangedRunnable = new Runnable() {
         @Override
         public void run() {
@@ -514,6 +527,7 @@ public class NotificationPanelView extends PanelView implements
         mKeyguardBottomArea = findViewById(R.id.keyguard_bottom_area);
         mQsNavbarScrim = findViewById(R.id.qs_navbar_scrim);
         mLastOrientation = getResources().getConfiguration().orientation;
+        mPulseLightsView = (NotificationLightsView) findViewById(R.id.lights_container);
 
         initBottomArea();
 
@@ -2052,7 +2066,7 @@ public class NotificationPanelView extends PanelView implements
         mQsAnimatorExpand = expanding;
     }
 
-    /**
+     /**
      * @return Whether we should intercept a gesture to open Quick Settings.
      */
     private boolean shouldQuickSettingsIntercept(float x, float y, float yDiff, boolean useHeader,
@@ -3309,7 +3323,6 @@ public class NotificationPanelView extends PanelView implements
                 || mBarState == StatusBarState.SHADE_LOCKED) {
             updateDozingVisibilities(animate);
         }
-
         final float dozeAmount = dozing ? 1 : 0;
         mStatusBarStateController.setDozeAmount(dozeAmount, animate);
     }
@@ -3323,11 +3336,52 @@ public class NotificationPanelView extends PanelView implements
         positionClockAndNotifications();
     }
 
+    public void updateAmbientPulse() {
+        if (mPulseLightsView != null) {
+            if (mPulsing) {
+                ContentResolver resolver = mContext.getContentResolver();
+                boolean pulseLights = Settings.System.getIntForUser(resolver,
+                        Settings.System.AMBIENT_NOTIFICATION_LIGHT, 1, UserHandle.USER_CURRENT) != 0;
+                boolean pulseColorAutomatic = Settings.System.getIntForUser(resolver,
+                        Settings.System.AMBIENT_NOTIFICATION_LIGHT_AUTOMATIC, 1, UserHandle.USER_CURRENT) != 0;
+                if (pulseLights && pulseColorAutomatic) {
+                    int pulseColor = mPulseLightsView.getNotificationLightsColor();
+                    if (pulseColorAutomatic) {
+                        ExpandableNotificationRow row = mNotificationStackScroller.getFirstActiveClearableNotification(ROWS_HIGH_PRIORITY);
+                        int notificationColor = row.getStatusBarNotification().getNotification().color;
+                        if (notificationColor != Notification.COLOR_DEFAULT ) {
+                            pulseColor = notificationColor;
+                        }
+                    }
+                    pulseColor |= 0xFF000000;
+                    mPulseLightsView.animateNotificationWithColor(pulseColor);
+                    mPulseLightsView.setVisibility(View.VISIBLE);
+                }
+            } else {
+                mPulseLightsView.endAnimation();
+                mPulseLightsView.setVisibility(View.GONE);
+            }
+        }
+    }
+
     public void setPulsing(boolean pulsing) {
         mPulsing = pulsing;
         DozeParameters dozeParameters = DozeParameters.getInstance(mContext);
         final boolean animatePulse = !dozeParameters.getDisplayNeedsBlanking()
                 && dozeParameters.getAlwaysOn();
+
+        ContentResolver resolver = mContext.getContentResolver();
+        boolean pulseLights = Settings.System.getIntForUser(resolver,
+                Settings.System.AMBIENT_NOTIFICATION_LIGHT, 1, UserHandle.USER_CURRENT) != 0;
+
+        ExpandableNotificationRow row = mNotificationStackScroller.getFirstActiveClearableNotification(ROWS_HIGH_PRIORITY);
+        boolean activeNotif = row != null;
+        int pulseReason = Settings.System.getIntForUser(resolver,
+                Settings.System.PULSE_TRIGGER_REASON, DozeLog.PULSE_REASON_NONE, UserHandle.USER_CURRENT);
+        boolean pulseReasonNotification = pulseReason == DozeLog.PULSE_REASON_NOTIFICATION;
+        boolean pulseColorAutomatic = Settings.System.getIntForUser(resolver,
+                Settings.System.AMBIENT_NOTIFICATION_LIGHT_AUTOMATIC, 1, UserHandle.USER_CURRENT) != 0;
+
         if (animatePulse) {
             mAnimateNextPositionUpdate = true;
         }
@@ -3336,6 +3390,43 @@ public class NotificationPanelView extends PanelView implements
         if (!mPulsing && !mDozing) {
             mAnimateNextPositionUpdate = false;
         }
+        if (DEBUG_PULSE_LIGHT) {
+            Log.d(TAG, "setPulsing pulsing = " + pulsing + " pulseLights = " + pulseLights
+                    + " activeNotif = " + activeNotif + " pulseColorAutomatic = " + pulseColorAutomatic
+                    + " mDozing = " + mDozing + " pulseReasonNotification = " + pulseReasonNotification);
+        }
+        if (mPulseLightsView != null) {
+            int pulseColor = mPulseLightsView.getNotificationLightsColor();
+            if (row != null) {
+                if (pulseColorAutomatic) {
+                    int notificationColor = row.getStatusBarNotification().getNotification().color;
+                    if (notificationColor != Notification.COLOR_DEFAULT) {
+                        pulseColor = notificationColor;
+                    }
+                } else {
+                    pulseColor = mPulseLightsView.getNotificationLightsColor();
+                }
+            }
+            pulseColor |= 0xFF000000;
+            if (mPulsing) {
+                if (activeNotif && pulseReasonNotification) {
+                    // show the bars if we have to
+                    if (pulseLights) {
+                        mPulseLightsView.animateNotificationWithColor(pulseColor);
+                        mPulseLightsView.setVisibility(View.VISIBLE);
+                    } else {
+                        // bars can still be visible as leftover
+                        // but we dont want them here
+                        mPulseLightsView.endAnimation();
+                        mPulseLightsView.setVisibility(View.GONE);
+                    }
+                }
+            } else {
+                mPulseLightsView.endAnimation();
+                mPulseLightsView.setVisibility(View.GONE);
+            }
+        }
+
         mNotificationStackScroller.setPulsing(pulsing, animatePulse);
         mKeyguardStatusView.setPulsing(pulsing);
     }
