@@ -24,7 +24,34 @@
     android:outlineProvider="none"
     android:elevation="5dp" > <!-- Put it above the status bar header -->
 
-    <include layout="@layout/keyguard_indication_area_overlay" />
+    <LinearLayout
+        android:id="@+id/keyguard_indication_area"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:orientation="vertical">
+
+        <com.android.systemui.statusbar.phone.KeyguardIndicationTextView
+            android:id="@+id/keyguard_indication_enterprise_disclosure"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingStart="@dimen/keyguard_indication_text_padding"
+            android:paddingEnd="@dimen/keyguard_indication_text_padding"
+            android:textAppearance="@style/TextAppearance.Keyguard.BottomArea"
+            android:visibility="gone"/>
+
+        <com.android.systemui.statusbar.phone.KeyguardIndicationTextView
+            android:id="@+id/keyguard_indication_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingStart="@dimen/keyguard_indication_text_padding"
+            android:paddingEnd="@dimen/keyguard_indication_text_padding"
+            android:textAppearance="@style/TextAppearance.Keyguard.BottomArea"
+            android:accessibilityLiveRegion="polite"/>
+
+    </LinearLayout>
 
     <include layout="@layout/keyguard_emergency_carrier_area"
         android:id="@+id/keyguard_selector_fade_container"
@@ -45,7 +72,9 @@
         android:id="@+id/camera_button"
         android:layout_height="@dimen/keyguard_affordance_height"
         android:layout_width="@dimen/keyguard_affordance_width"
+        android:layout_margin="@dimen/keyguard_affordance_margin"
         android:layout_gravity="bottom|end"
+        android:padding="@dimen/keyguard_affordance_padding"
         android:src="@drawable/ic_camera_alt_24dp"
         android:scaleType="center"
         android:contentDescription="@string/accessibility_camera_button"
@@ -55,7 +84,9 @@
         android:id="@+id/left_button"
         android:layout_height="@dimen/keyguard_affordance_height"
         android:layout_width="@dimen/keyguard_affordance_width"
+        android:layout_margin="@dimen/keyguard_affordance_margin"
         android:layout_gravity="bottom|start"
+        android:padding="@dimen/keyguard_affordance_padding"
         android:src="@*android:drawable/ic_phone"
         android:scaleType="center"
         android:contentDescription="@string/accessibility_phone_button"

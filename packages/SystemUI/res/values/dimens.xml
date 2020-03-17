@@ -487,7 +487,7 @@
     <dimen name="qs_data_usage_usage_text_size">36sp</dimen>
     <dimen name="qs_battery_padding">2dp</dimen>
     <dimen name="qs_detail_padding_start">16dp</dimen>
-    <dimen name="qs_detail_items_padding_top">4dp</dimen>
+    <dimen name="qs_detail_items_padding_top">16dp</dimen>
     <dimen name="qs_detail_item_icon_size">24dp</dimen>
     <dimen name="qs_detail_item_icon_width">32dp</dimen>
     <dimen name="qs_detail_item_icon_marginStart">0dp</dimen>
@@ -750,6 +750,8 @@
     <!-- The width/height of the phone/camera icon view on keyguard. -->
     <dimen name="keyguard_affordance_height">56dp</dimen>
     <dimen name="keyguard_affordance_width">56dp</dimen>
+    <dimen name="keyguard_affordance_padding">10dp</dimen>
+    <dimen name="keyguard_affordance_margin">15dp</dimen>
 
     <!-- The width/height of the unlock icon view on keyguard. -->
     <dimen name="keyguard_lock_height">42dp</dimen>
