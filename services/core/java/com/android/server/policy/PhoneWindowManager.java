@@ -812,6 +812,14 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         }
     };
 
+    private UEventObserver mHDMISwitchObserver = new UEventObserver() {
+        @Override
+        public void onUEvent(UEventObserver.UEvent event) {
+            mDefaultDisplayPolicy.setHdmiPlugged("1".equals(event.get("STATUS")));
+        }
+    };
+
+
     private UEventObserver mExtEventObserver = new UEventObserver() {
         @Override
         public void onUEvent(UEventObserver.UEvent event) {
@@ -3858,6 +3866,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         boolean plugged = false;
         mExtEventObserver.startObserving("mdss_mdp/drm/card");
         // watch for HDMI plug messages if the hdmi switch exists
+         mHDMISwitchObserver.startObserving("change@/devices/virtual/graphics/fb2");
         if (new File("/sys/devices/virtual/switch/hdmi/state").exists()) {
             mHDMIObserver.startObserving("DEVPATH=/devices/virtual/switch/hdmi");
 
@@ -4141,8 +4150,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     }
                 }
 
-
-                if ((result & ACTION_PASS_TO_USER) == 0) {
+                if (mUseTvRouting || mHandleVolumeKeysInWM || !mVolBtnMusicControls) {
+                    // Defer special key handlings to
+                    // {@link interceptKeyBeforeDispatching()}.
+                    result |= ACTION_PASS_TO_USER;
+                } else if ((result & ACTION_PASS_TO_USER) == 0) {
                     boolean mayChangeVolume = false;
 
                     if (isMusicActive()) {
@@ -4169,6 +4181,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                             // on key down events
                             mayChangeVolume = down;
                         }
+                    } else {
+                        result |= ACTION_PASS_TO_USER;
+                        break;
                     }
                     if (mayChangeVolume) {
                         // If we aren't passing to the user and no one else
@@ -4225,6 +4240,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 EventLogTags.writeInterceptPower(
                         KeyEvent.actionToString(event.getAction()),
                         mPowerKeyHandled ? 1 : 0, mPowerKeyPressCounter);
+                if ((mDefaultDisplayPolicy.getTopFullscreenOpaqueWindowStatePrivateFlags()
+                                & WindowManager.LayoutParams.PRIVATE_FLAG_PREVENT_POWER_KEY) != 0
+                        && mDefaultDisplayPolicy.isScreenOnFully()) {
+                    return result;
+                }
                 // Any activity on the power button stops the accessibility shortcut
                 cancelPendingAccessibilityShortcutAction();
                 result &= ~ACTION_PASS_TO_USER;
@@ -4274,7 +4294,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
             case KeyEvent.KEYCODE_WAKEUP: {
                 result &= ~ACTION_PASS_TO_USER;
-                isWakeKey = true;
+                isWakeKey = false;  // We handle this in KeyHandler
                 break;
             }
 
@@ -4549,7 +4569,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         }
 
         boolean isDozing = isDozeMode();
-         if (isDozing && isVolumeKey(keyCode)) {
+        if (isDozing && isVolumeKey(keyCode)) {
             return false;
         }
 

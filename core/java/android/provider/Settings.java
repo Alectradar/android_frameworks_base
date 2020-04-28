@@ -4495,6 +4495,21 @@ public final class Settings {
          */
 
         /**
+         * Screen stabilization parameters
+         * @hide
+         */
+        public static final String STABILIZATION_ENABLE = "stabilization_enable";
+
+        /** @hide */
+        public static final String STABILIZATION_VELOCITY_FRICTION = "stabilization_velocity_friction";
+
+        /** @hide */
+        public static final String STABILIZATION_POSITION_FRICTION = "stabilization_position_friction";
+
+        /** @hide */
+        public static final String STABILIZATION_VELOCITY_AMPLITUDE = "stabilization_velocity_amplitude";
+
+        /**
          * Whether user can swap the order of the Alert Slider.
          * * Whether user can invert the order of the Alert Slider.
          * 0: Default
@@ -4514,6 +4529,12 @@ public final class Settings {
          * @hide
          */
         public static final String GESTURE_DOUBLE_TAP = "gesture_double_tap";
+
+        /**
+         * Controls whether single tap to wake is enabled.
+         * @hide
+         */
+        public static final String GESTURE_SINGLE_TAP = "gesture_single_tap";
 
         /**
          * Controls whether draw V gesture is enabled.
@@ -4650,6 +4671,22 @@ public final class Settings {
         /** @hide */
         public static final Validator INCALL_FEEDBACK_VIBRATE_VALIDATOR =
                 BOOLEAN_VALIDATOR;
+
+        /**
+         * Adaptive playback
+         * Automatically pause media when the volume is muted and
+         * will resume automatically when volume is restored.
+         *   0 = disabled
+         *   1 = enabled
+         * @hide
+         */
+        public static final String ADAPTIVE_PLAYBACK_ENABLED = "adaptive_playback_enabled";
+
+        /**
+         * Adaptive playback's timeout in ms
+         * @hide
+         */
+        public static final String ADAPTIVE_PLAYBACK_TIMEOUT = "adaptive_playback_timeout";
 
         /**
          * Whether allowing pocket service to register sensors and dispatch informations.
@@ -4860,6 +4897,7 @@ public final class Settings {
             PRIVATE_SETTINGS.add(DISPLAY_COLOR_MODE);
             PRIVATE_SETTINGS.add(GESTURES_ENABLED);
             PRIVATE_SETTINGS.add(GESTURE_DOUBLE_TAP);
+            PRIVATE_SETTINGS.add(GESTURE_SINGLE_TAP);
             PRIVATE_SETTINGS.add(GESTURE_DRAW_V);
             PRIVATE_SETTINGS.add(GESTURE_DRAW_INVERSE_V);
             PRIVATE_SETTINGS.add(GESTURE_DRAW_O);

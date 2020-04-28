@@ -43,6 +43,7 @@ import android.widget.ImageView;
 
 import com.android.keyguard.KeyguardUpdateMonitor;
 import com.android.keyguard.KeyguardUpdateMonitorCallback;
+import com.android.keyguard.KeyguardSecurityModel.SecurityMode;
 import com.android.systemui.R;
 
 import vendor.pa.biometrics.fingerprint.inscreen.V1_0.IFingerprintInscreen;
@@ -134,9 +135,9 @@ public class FODCircleView extends ImageView implements OnTouchListener {
         public void onPulsing(boolean pulsing) {
             super.onPulsing(pulsing);
             mIsPulsing = pulsing;
-	    if (mIsPulsing) {
+            if (mIsPulsing) {
                 mIsDreaming = false;
-	    }
+            }
             mIsInsideCircle = false;
         }
 
@@ -178,10 +179,17 @@ public class FODCircleView extends ImageView implements OnTouchListener {
         @Override
         public void onKeyguardBouncerChanged(boolean isBouncer) {
             mIsBouncer = isBouncer;
-            if (isBouncer) {
+            if (mUpdateMonitor.isFingerprintDetectionRunning()) {
+                final SecurityMode sec = mUpdateMonitor.getSecurityMode();
+                final boolean maybeShow = sec == SecurityMode.Pattern ||
+                        sec == SecurityMode.PIN;
+                if (maybeShow || !mIsBouncer) {
+                    show();
+                } else {
+                    hide();
+                }
+            } else {
                 hide();
-            } else if (mUpdateMonitor.isFingerprintDetectionRunning()) {
-                show();
             }
         }
 
@@ -200,10 +208,12 @@ public class FODCircleView extends ImageView implements OnTouchListener {
         public void onBiometricRunningStateChanged(boolean running,
                 BiometricSourceType biometricSourceType) {
             super.onBiometricRunningStateChanged(running, biometricSourceType);
-            if (running) {
-                show();
-            } else {
-                hide();
+            if (biometricSourceType == BiometricSourceType.FINGERPRINT){
+                if (running) {
+                    show();
+                } else {
+                    hide();
+                }
             }
         }
     };

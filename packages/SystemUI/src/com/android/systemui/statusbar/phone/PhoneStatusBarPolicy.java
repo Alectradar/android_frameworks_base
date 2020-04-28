@@ -53,6 +53,7 @@ import com.android.systemui.privacy.PrivacyItemControllerKt;
 import com.android.systemui.privacy.PrivacyType;
 import com.android.systemui.qs.tiles.DndTile;
 import com.android.systemui.qs.tiles.RotationLockTile;
+import com.android.systemui.screenrecord.RecordingController;
 import com.android.systemui.statusbar.CommandQueue;
 import com.android.systemui.statusbar.policy.BluetoothController;
 import com.android.systemui.statusbar.policy.CastController;
@@ -130,6 +131,7 @@ public class PhoneStatusBarPolicy
     private final PrivacyItemController mPrivacyItemController;
     private final UiOffloadThread mUiOffloadThread = Dependency.get(UiOffloadThread.class);
     private final SensorPrivacyController mSensorPrivacyController;
+    private final RecordingController mRecordingController;
 
     // Assume it's all good unless we hear otherwise.  We don't always seem
     // to get broadcasts that it *is* there.
@@ -163,6 +165,7 @@ public class PhoneStatusBarPolicy
         mLocationController = Dependency.get(LocationController.class);
         mPrivacyItemController = Dependency.get(PrivacyItemController.class);
         mSensorPrivacyController = Dependency.get(SensorPrivacyController.class);
+        mRecordingController = Dependency.get(RecordingController.class);
 
         mSlotCast = context.getString(com.android.internal.R.string.status_bar_cast);
         mSlotHotspot = context.getString(com.android.internal.R.string.status_bar_hotspot);
@@ -513,6 +516,7 @@ public class PhoneStatusBarPolicy
 
     private void updateCast() {
         boolean isCasting = false;
+        boolean isRecording = mRecordingController.isRecording();
         for (CastDevice device : mCast.getCastDevices()) {
             if (device.state == CastDevice.STATE_CONNECTING
                     || device.state == CastDevice.STATE_CONNECTED) {
@@ -522,7 +526,7 @@ public class PhoneStatusBarPolicy
         }
         if (DEBUG) Log.v(TAG, "updateCast: isCasting: " + isCasting);
         mHandler.removeCallbacks(mRemoveCastIconRunnable);
-        if (isCasting) {
+        if (isCasting && !isRecording) {
             mIconController.setIcon(mSlotCast, R.drawable.stat_sys_cast,
                     mContext.getString(R.string.accessibility_casting));
             mIconController.setIconVisibility(mSlotCast, true);
@@ -790,5 +794,4 @@ public class PhoneStatusBarPolicy
                 mContext.getString(R.string.accessibility_status_bar_hotspot));
         }
     }
-
 }

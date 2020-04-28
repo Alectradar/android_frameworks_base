@@ -50,6 +50,8 @@
     <!-- Key codes of gestures. If the gesture is not supported set it to 0. -->
     <integer name="config_doubleTapKeyCode">0</integer>
 
+    <integer name="config_singleTapKeyCode">0</integer>
+
     <integer name="config_drawVKeyCode">0</integer>
 
     <integer name="config_drawInverseVKeyCode">0</integer>
@@ -87,6 +89,8 @@
             7 - Open camera
             8 - Open dialer -->
     <integer name="config_doubleTapDefault">0</integer>
+
+    <integer name="config_singleTapDefault">0</integer>
 
     <integer name="config_drawVDefault">0</integer>
 
@@ -151,5 +155,8 @@
 
     <!-- Default value for Horizon light color (Blue) -->
     <integer name="config_AmbientPulseLightColor">0x3980FF</integer>
+
+    <!-- Whether to allow process with media UID to access CameraServiceProxy -->
+    <bool name="config_allowMediaUidForCameraServiceProxy">false</bool>
 
 </resources>

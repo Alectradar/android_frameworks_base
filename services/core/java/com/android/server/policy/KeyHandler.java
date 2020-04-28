@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016, ParanoidAndroid Project
+ * Copyright (C) 2020, Paranoid Android
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.android.server.policy;
+
+import static android.hardware.display.AmbientDisplayConfiguration.DOZE_NO_PROXIMITY_CHECK;
 
 import android.app.KeyguardManager;
 import android.app.StatusBarManager;
@@ -51,6 +53,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseIntArray;
 import android.view.KeyEvent;
+import android.view.ViewConfiguration;
 import android.view.WindowManagerGlobal;
 
 import com.android.server.LocalServices;
@@ -68,10 +71,10 @@ public class KeyHandler {
 
     private static final String TAG = KeyHandler.class.getSimpleName();
 
-    private static final boolean DEBUG = true; // Log.isLoggable(TAG, Log.DEBUG);
+    private static final boolean DEBUG = Log.isLoggable(TAG, Log.DEBUG);
 
     private static final int GESTURE_REQUEST = 1;
-    private static final int GESTURE_WAKE_LOCK_DURATION = 3000; // ms
+    private static final int GESTURE_WAKE_LOCK_DURATION = 250; // ms
 
     private static final int MAX_SUPPORTED_GESTURES = 15;
 
@@ -82,22 +85,19 @@ public class KeyHandler {
     // Dummy camera id for CameraManager.
     private static final String DUMMY_CAMERA_ID = "";
 
-    // Vibration attributes.
-    private static final AudioAttributes VIBRATION_ATTRIBUTES = new AudioAttributes.Builder()
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-            .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
-            .build();
+    private static final String DOZE_INTENT = "com.android.systemui.doze.pulse";
 
     // Supported actions.
     private static final int DISABLED = 0;
     private static final int WAKE_UP = 1;
-    private static final int TORCH = 2;
-    private static final int AIRPLANE = 3;
-    private static final int MUSIC_PLAY_PAUSE = 4;
-    private static final int MUSIC_NEXT = 5;
-    private static final int MUSIC_PREVIOUS = 6;
-    private static final int CAMERA = 7;
-    private static final int DIALER = 8;
+    private static final int PULSE_AMBIENT = 2;
+    private static final int TORCH = 3;
+    private static final int AIRPLANE = 4;
+    private static final int MUSIC_PLAY_PAUSE = 5;
+    private static final int MUSIC_NEXT = 6;
+    private static final int MUSIC_PREVIOUS = 7;
+    private static final int CAMERA = 8;
+    private static final int DIALER = 9;
 
     private final Context mContext;
     private PowerManager mPowerManager;
@@ -116,6 +116,7 @@ public class KeyHandler {
     private boolean mSystemReady = false;
 
     private int mDoubleTapKeyCode;
+    private int mSingleTapKeyCode;
     private int mDrawOKeyCode;
     private int mTwoFingerSwipeKeyCode;
     private int mDrawVKeyCode;
@@ -131,6 +132,7 @@ public class KeyHandler {
     private int mDrawSKeyCode;
 
     private int mDoubleTapGesture;
+    private int mSingleTapGesture;
     private int mDrawOGesture;
     private int mTwoFingerSwipeGesture;
     private int mDrawVGesture;
@@ -147,6 +149,7 @@ public class KeyHandler {
 
     private boolean mGesturesEnabled;
     private boolean mIsInPocket;
+    private boolean mSingleDoubleSpecialCase;
 
     private SparseIntArray mGestures = new SparseIntArray(MAX_SUPPORTED_GESTURES);
 
@@ -219,6 +222,7 @@ public class KeyHandler {
 
         // Gestures device key codes.
         mDoubleTapKeyCode = resources.getInteger(R.integer.config_doubleTapKeyCode);
+        mSingleTapKeyCode = resources.getInteger(R.integer.config_singleTapKeyCode);
         mDrawOKeyCode = resources.getInteger(R.integer.config_drawOKeyCode);
         mTwoFingerSwipeKeyCode = resources.getInteger(R.integer.config_twoFingerSwipeKeyCode);
         mDrawVKeyCode = resources.getInteger(R.integer.config_drawVKeyCode);
@@ -235,6 +239,7 @@ public class KeyHandler {
 
         mGestures.clear();
         mGestures.put(mDoubleTapKeyCode, mDoubleTapGesture);
+        mGestures.put(mSingleTapKeyCode, mSingleTapGesture);
         mGestures.put(mDrawOKeyCode, mDrawOGesture);
         mGestures.put(mTwoFingerSwipeKeyCode, mTwoFingerSwipeGesture);
         mGestures.put(mDrawVKeyCode, mDrawVGesture);
@@ -266,6 +271,14 @@ public class KeyHandler {
         if (doubleTapGesture != mDoubleTapGesture) {
             mDoubleTapGesture = doubleTapGesture;
             mGestures.put(mDoubleTapKeyCode, mDoubleTapGesture);
+        }
+
+        int singleTapGesture = Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.GESTURE_SINGLE_TAP, mContext.getResources()
+                        .getInteger(com.android.internal.R.integer.config_singleTapDefault));
+        if (singleTapGesture != mSingleTapGesture) {
+            mSingleTapGesture = singleTapGesture;
+            mGestures.put(mSingleTapKeyCode, mSingleTapGesture);
         }
 
         int drawOGesture = Settings.System.getInt(mContext.getContentResolver(),
@@ -371,6 +384,9 @@ public class KeyHandler {
             mDrawSGesture = drawSGesture;
             mGestures.put(mDrawSKeyCode, mDrawSGesture);
         }
+
+        mSingleDoubleSpecialCase = mGestures.get(mDoubleTapKeyCode) > 0 &&
+                mGestures.get(mSingleTapKeyCode) > 0;
     }
 
     private void ensureAudioManager() {
@@ -455,6 +471,9 @@ public class KeyHandler {
                 Settings.System.GESTURE_DOUBLE_TAP),
                 false, mObserver, UserHandle.USER_ALL);
         resolver.registerContentObserver(Settings.System.getUriFor(
+                Settings.System.GESTURE_SINGLE_TAP),
+                false, mObserver, UserHandle.USER_ALL);
+        resolver.registerContentObserver(Settings.System.getUriFor(
                 Settings.System.GESTURE_DRAW_V),
                 false, mObserver, UserHandle.USER_ALL);
         resolver.registerContentObserver(Settings.System.getUriFor(
@@ -510,8 +529,6 @@ public class KeyHandler {
 
         mPowerManagerInternal.powerHint(PowerHint.INTERACTION, 0);
 
-        doHapticFeedback(true);
-
         boolean handled = false;
 
         switch(gesture) {
@@ -533,6 +550,9 @@ public class KeyHandler {
                 handled = isMusicActive() && dispatchMediaKeyWithWakeLockToMediaSession(KeyEvent.KEYCODE_MEDIA_NEXT);
                 break;
             case WAKE_UP:
+                if (mPowerManager.isScreenOn()) {
+                    return;
+                }
                 mPowerManager.wakeUp(SystemClock.uptimeMillis());
                 handled = true;
                 break;
@@ -547,29 +567,24 @@ public class KeyHandler {
                 handled = true;
                 break;
             case AIRPLANE:
-                doHapticFeedback(true);
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        // Change the system setting
-                        boolean enabled = Settings.Global.getInt(mContext.getContentResolver(),
-                                Settings.Global.AIRPLANE_MODE_ON, 0) != 0;
-                        Settings.Global.putInt(mContext.getContentResolver(),
-                                Settings.Global.AIRPLANE_MODE_ON, !enabled ? 1 : 0);
-                        // Post the intent
-                        Intent intent = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
-                        intent.addFlags(Intent.FLAG_RECEIVER_REPLACE_PENDING);
-                        intent.putExtra("state", enabled);
-                        mContext.sendBroadcastAsUser(intent, UserHandle.ALL);
-                        mPowerManager.wakeUp(SystemClock.uptimeMillis());
-                        mHandler.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                mPowerManager.goToSleep(SystemClock.uptimeMillis());
-                            }
-                        }, 1500);
-                    }
-                });
+                // Change the system setting
+                boolean enabled = Settings.Global.getInt(mContext.getContentResolver(),
+                        Settings.Global.AIRPLANE_MODE_ON, 0) != 0;
+                Settings.Global.putInt(mContext.getContentResolver(),
+                        Settings.Global.AIRPLANE_MODE_ON, !enabled ? 1 : 0);
+                // Post the intent
+                Intent intent = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
+                intent.addFlags(Intent.FLAG_RECEIVER_REPLACE_PENDING);
+                intent.putExtra("state", enabled);
+                mContext.sendBroadcastAsUser(intent, UserHandle.ALL);
+                handled = true;
+                break;
+            case PULSE_AMBIENT:
+                Intent pulseIntent = new Intent(DOZE_INTENT);
+                pulseIntent.putExtra(DOZE_NO_PROXIMITY_CHECK, 1);
+                mContext.sendBroadcastAsUser(pulseIntent,
+                    new UserHandle(UserHandle.USER_CURRENT));
+                handled = true;
                 break;
             default:
                 handled = false;
@@ -577,9 +592,7 @@ public class KeyHandler {
                 break;
         }
 
-        if (!handled) {
-            doHapticFeedback(false);
-        }
+        doHapticFeedback(handled);
     }
 
     private void acquireGestureWakeLock(int duration) {
@@ -617,20 +630,10 @@ public class KeyHandler {
         }
 
         if (action != KeyEvent.ACTION_UP || repeatCount != 0) {
-            if (keyCode == KeyEvent.KEYCODE_WAKEUP) {
-                if (DEBUG) {
-                    Log.w(TAG, "handleKeyEvent(): KEY_WAKEUP detected.");
-                }
-                if (!mIsInPocket) {
-                    doHapticFeedback(true);
-                }
-                return false;
-            } else {
-                if (DEBUG) {
-                    Log.w(TAG, "handleKeyEvent(): action != ACTION_UP || repeatCount != 0, returning.");
-                }
-                return false;
+            if (DEBUG) {
+                Log.w(TAG, "handleKeyEvent(): action != ACTION_UP || repeatCount != 0, returning.");
             }
+            return false;
         }
 
         boolean isKeySupportedAndEnabled = mGestures.get(scanCode) > 0;
@@ -639,10 +642,16 @@ public class KeyHandler {
             Log.w(TAG, "handleKeyEvent(): isKeySupportedAndEnabled = " + isKeySupportedAndEnabled);
         }
 
-        if (isKeySupportedAndEnabled && !mHandler.hasMessages(GESTURE_REQUEST)) {
+        // If it's held, means we just processed a gesture or we are in the middle of one
+        if (isKeySupportedAndEnabled && !mGestureWakeLock.isHeld()) {
             Message msg = getMessageForKeyEvent(event);
             if (!mIsInPocket) {
-                mHandler.sendMessage(msg);
+                if (scanCode == mSingleTapKeyCode && mSingleDoubleSpecialCase) {
+                    mHandler.sendMessageDelayed(msg, ViewConfiguration.getDoubleTapTimeout());
+                } else {
+                    mHandler.removeMessages(GESTURE_REQUEST);
+                    mHandler.sendMessage(msg);
+                }
             }
         }
 

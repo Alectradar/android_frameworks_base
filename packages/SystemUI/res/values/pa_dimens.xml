@@ -59,4 +59,8 @@
     <dimen name="config_customCutoutBottomWidth">0.0px</dimen>
     <dimen name="config_customCutoutBottomHeight">0.0px</dimen>
 
+    <!-- Screen record -->
+    <dimen name="screenrecord_dialog_padding">18dp</dimen>
+    <dimen name="screenrecord_logo_size">24dp</dimen>
+
 </resources>

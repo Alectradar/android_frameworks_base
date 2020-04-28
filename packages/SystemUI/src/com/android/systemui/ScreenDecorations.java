@@ -106,6 +106,10 @@ public class ScreenDecorations extends SystemUI implements Tunable,
     public static final String PADDING = "sysui_rounded_content_padding";
     private static final boolean DEBUG_SCREENSHOT_ROUNDED_CORNERS =
             SystemProperties.getBoolean("debug.screenshot_rounded_corners", false);
+
+    private static int mDisableRoundedCorner =
+            SystemProperties.getInt("vendor.display.disable_rounded_corner", 0);
+
     private static final boolean VERBOSE = false;
 
     private DisplayManager mDisplayManager;
@@ -527,8 +531,11 @@ public class ScreenDecorations extends SystemUI implements Tunable,
     }
 
     private void updateRoundedCornerRadii() {
-        final int newRoundedDefault = mContext.getResources().getDimensionPixelSize(
+        int newRoundedDefault = mContext.getResources().getDimensionPixelSize(
                 com.android.internal.R.dimen.rounded_corner_radius);
+        if (mDisableRoundedCorner == 1) {
+            newRoundedDefault = 0;
+        }
         final int newRoundedDefaultTop = mContext.getResources().getDimensionPixelSize(
                 com.android.internal.R.dimen.rounded_corner_radius_top);
         final int newRoundedDefaultBottom = mContext.getResources().getDimensionPixelSize(
@@ -650,6 +657,10 @@ public class ScreenDecorations extends SystemUI implements Tunable,
     }
 
     static boolean shouldDrawCutout(Context context) {
+        if (mDisableRoundedCorner == 1) {
+           return false;
+        }
+
         return context.getResources().getBoolean(
                 com.android.internal.R.bool.config_fillMainBuiltInDisplayCutout);
     }
@@ -660,13 +671,15 @@ public class ScreenDecorations extends SystemUI implements Tunable,
         // screen decorations overlay.
         int padding = mContext.getResources().getDimensionPixelSize(
                 R.dimen.rounded_corner_content_padding);
-        if (padding != 0) {
-            setupStatusBarPadding(padding);
+        int qsPadding = mContext.getResources().getDimensionPixelSize(
+                R.dimen.qs_corner_content_padding);
+        if (padding != 0 || qsPadding != 0) {
+            setupStatusBarPadding(padding, qsPadding);
         }
 
     }
 
-    private void setupStatusBarPadding(int padding) {
+    private void setupStatusBarPadding(int padding, int qsPadding) {
         // Add some padding to all the content near the edge of the screen.
         StatusBar sb = getComponent(StatusBar.class);
         View statusBar = (sb != null ? sb.getStatusBarWindow() : null);
@@ -678,7 +691,7 @@ public class ScreenDecorations extends SystemUI implements Tunable,
             fragmentHostManager.addTagListener(CollapsedStatusBarFragment.TAG,
                     new TunablePaddingTagListener(padding, R.id.status_bar));
             fragmentHostManager.addTagListener(QS.TAG,
-                    new TunablePaddingTagListener(padding, R.id.header));
+                    new TunablePaddingTagListener(qsPadding, R.id.header));
         }
     }
 
