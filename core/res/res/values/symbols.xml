@@ -2079,6 +2079,14 @@
   <java-symbol type="layout" name="safe_mode" />
   <java-symbol type="layout" name="simple_list_item_2_single_choice" />
   <java-symbol type="layout" name="app_error_dialog" />
+  <java-symbol type="string" name="wifi_cannot_connect_with_randomized_mac_title" />
+  <java-symbol type="string" name="wifi_cannot_connect_with_randomized_mac_message" />
+  <java-symbol type="string" name="wifi_disable_mac_randomization_dialog_title" />
+  <java-symbol type="string" name="wifi_disable_mac_randomization_dialog_message" />
+  <java-symbol type="string" name="wifi_disable_mac_randomization_dialog_confirm_text" />
+  <java-symbol type="string" name="wifi_disable_mac_randomization_dialog_success" />
+  <java-symbol type="string" name="wifi_disable_mac_randomization_dialog_failure" />
+  <java-symbol type="string" name="wifi_disable_mac_randomization_dialog_network_not_found" />
   <java-symbol type="plurals" name="wifi_available" />
   <java-symbol type="plurals" name="wifi_available_detailed" />
   <java-symbol type="string" name="wifi_available_title" />
@@ -3880,6 +3888,11 @@
   <java-symbol type="string" name="config_defaultNearbySharingComponent" />
 
   <java-symbol type="bool" name="config_automotiveHideNavBarForKeyboard" />
+  <java-symbol type="bool" name="reset_geo_fencing_check_after_boot_or_apm" />
+
+  <!-- For shutdown animation -->
+  <java-symbol type="bool" name="config_shutdownAnimationEnabled" />
+  <java-symbol type="integer" name="config_shutdownAnimationDurationMs" />
 
   <!-- For Pdn throttle feature -->
   <java-symbol type="bool" name="config_pdp_retry_for_29_33_55_enabled" />

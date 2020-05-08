@@ -25,6 +25,7 @@ import android.content.Context;
 import android.os.UserHandle;
 import android.provider.Settings;
 import android.view.View;
+import android.widget.ImageButton;
 import android.widget.FrameLayout;
 
 import com.android.internal.util.Preconditions;
@@ -116,6 +117,7 @@ public class BrightnessMirrorController
         mStatusBarWindow.removeView(mBrightnessMirror);
         mBrightnessMirror = LayoutInflater.from(mBrightnessMirror.getContext()).inflate(
                 R.layout.brightness_mirror, mStatusBarWindow, false);
+
         mStatusBarWindow.addView(mBrightnessMirror, index);
 
         for (int i = 0; i < mBrightnessMirrorListeners.size(); i++) {
