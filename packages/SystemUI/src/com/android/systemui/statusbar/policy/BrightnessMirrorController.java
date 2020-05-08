@@ -25,6 +25,7 @@ import android.content.Context;
 import android.os.UserHandle;
 import android.provider.Settings;
 import android.view.View;
+import android.widget.ImageButton;
 import android.widget.FrameLayout;
 
 import com.android.internal.util.Preconditions;
@@ -56,6 +57,7 @@ public class BrightnessMirrorController
         mStatusBarWindow = statusBarWindow;
         mBrightnessMirror = statusBarWindow.findViewById(R.id.brightness_mirror);
         mNotificationPanel = statusBarWindow.findViewById(R.id.notification_panel);
+        mIcon = (ImageButton) statusBarWindow.findViewById(R.id.brightness_icon);
         mNotificationPanel.setPanelAlphaEndAction(() -> {
             mBrightnessMirror.setVisibility(View.INVISIBLE);
         });
@@ -63,6 +65,7 @@ public class BrightnessMirrorController
     }
 
     public void showMirror() {
+        updateIcon();
         mBrightnessMirror.setVisibility(View.VISIBLE);
         mVisibilityCallback.accept(true);
         mNotificationPanel.setPanelAlpha(0, true /* animate */);
@@ -112,10 +115,15 @@ public class BrightnessMirrorController
     }
 
     private void reinflate() {
+        if (mIcon != null) {
+            mIcon.setVisibility(View.GONE);
+        }
         int index = mStatusBarWindow.indexOfChild(mBrightnessMirror);
         mStatusBarWindow.removeView(mBrightnessMirror);
         mBrightnessMirror = LayoutInflater.from(mBrightnessMirror.getContext()).inflate(
                 R.layout.brightness_mirror, mStatusBarWindow, false);
+        mIcon = mBrightnessMirror.findViewById(R.id.brightness_icon);
+
         mStatusBarWindow.addView(mBrightnessMirror, index);
 
         for (int i = 0; i < mBrightnessMirrorListeners.size(); i++) {

@@ -29,8 +29,20 @@
         android:layout_height="48dp"
         android:layout_gravity="center_vertical"
         android:layout_weight="1"
+        android:layout_marginStart="@dimen/qs_footer_brightness_margin"
         android:contentDescription="@string/accessibility_brightness"
         android:importantForAccessibility="no"
         systemui:text="@string/status_bar_settings_auto_brightness_label" />
+
+    <com.android.keyguard.AlphaOptimizedImageButton
+        android:id="@+id/brightness_icon"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="-4dp"
+        android:layout_marginEnd="@dimen/qs_footer_brightness_margin"
+        android:background="@drawable/rounded_ripple"
+        android:tint="?android:attr/colorAccent"
+        android:contentDescription="@null" />
 
 </LinearLayout>

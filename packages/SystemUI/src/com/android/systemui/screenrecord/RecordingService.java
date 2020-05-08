@@ -46,6 +46,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
+import android.view.WindowManager;
 import android.widget.Toast;
 
 import com.android.systemui.Dependency;
@@ -94,6 +95,8 @@ public class RecordingService extends Service {
     private boolean mUseAudio;
     private boolean mShowTaps;
     private File mTempFile;
+
+    private WindowManager mWindowManager;
 
     /**
      * Get an intent to start the recording service.
@@ -213,6 +216,14 @@ public class RecordingService extends Service {
         return null;
     }
 
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        mWindowManager =
+            (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+    }
+
     /**
      * Begin the recording session
      */
@@ -232,7 +243,8 @@ public class RecordingService extends Service {
             mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
 
             // Set up video
-            DisplayMetrics metrics = getResources().getDisplayMetrics();
+            DisplayMetrics metrics = new DisplayMetrics();
+            mWindowManager.getDefaultDisplay().getRealMetrics(metrics);
             int screenWidth = metrics.widthPixels;
             int screenHeight = metrics.heightPixels;
             mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
@@ -287,7 +299,7 @@ public class RecordingService extends Service {
 
         Bundle extras = new Bundle();
         extras.putString("android.substName", getResources().getString(R.string.screenrecord_name));
-        title = mUseAudio ? getResources().getString(R.string.screenrecord_ongoing_screen_and_audio) : 
+        title = mUseAudio ? getResources().getString(R.string.screenrecord_ongoing_screen_and_audio) :
                 getResources().getString(R.string.screenrecord_ongoing_screen_only);
         mRecordingNotificationBuilder = new Notification.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_screenrecord)
@@ -297,7 +309,7 @@ public class RecordingService extends Service {
                 .setColor(getResources().getColor(R.color.GM2_red_700))
                 .setOngoing(true)
                 .setContentIntent(PendingIntent.getService(
-                        this, REQUEST_CODE, getStopIntent(this), 
+                        this, REQUEST_CODE, getStopIntent(this),
                         PendingIntent.FLAG_UPDATE_CURRENT))
                 .addExtras(extras);
         nm.notify(NOTIFICATION_ID, mRecordingNotificationBuilder.build());

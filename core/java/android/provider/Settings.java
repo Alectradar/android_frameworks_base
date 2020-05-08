@@ -4306,6 +4306,16 @@ public final class Settings {
         public static final Validator LOCKSCREEN_SOUNDS_ENABLED_VALIDATOR = BOOLEAN_VALIDATOR;
 
         /**
+         * Whether to play tone when the mo call is connected.
+         * @hide
+         */
+        @UnsupportedAppUsage
+        public static final String CALL_CONNECTED_TONE_ENABLED = "call_connected_tone_enabled";
+
+        /** @hide */
+        public static final Validator CALL_CONNECTED_TONE_ENABLED_VALIDATOR = BOOLEAN_VALIDATOR;
+
+        /**
          * Whether the lockscreen should be completely disabled.
          * @hide
          */
@@ -4757,6 +4767,7 @@ public final class Settings {
             POWER_SOUNDS_ENABLED,       // moved to global
             DOCK_SOUNDS_ENABLED,        // moved to global
             LOCKSCREEN_SOUNDS_ENABLED,
+            CALL_CONNECTED_TONE_ENABLED,
             SHOW_WEB_SUGGESTIONS,
             SIP_CALL_OPTIONS,
             SIP_RECEIVE_CALLS,
@@ -4877,6 +4888,7 @@ public final class Settings {
             PRIVATE_SETTINGS.add(POWER_SOUNDS_ENABLED);
             PRIVATE_SETTINGS.add(DOCK_SOUNDS_ENABLED);
             PRIVATE_SETTINGS.add(LOCKSCREEN_SOUNDS_ENABLED);
+            PRIVATE_SETTINGS.add(CALL_CONNECTED_TONE_ENABLED);
             PRIVATE_SETTINGS.add(LOCKSCREEN_DISABLED);
             PRIVATE_SETTINGS.add(LOW_BATTERY_SOUND);
             PRIVATE_SETTINGS.add(DESK_DOCK_SOUND);
@@ -4992,6 +5004,7 @@ public final class Settings {
             VALIDATORS.put(WINDOW_ORIENTATION_LISTENER_LOG,
                     WINDOW_ORIENTATION_LISTENER_LOG_VALIDATOR);
             VALIDATORS.put(LOCKSCREEN_SOUNDS_ENABLED, LOCKSCREEN_SOUNDS_ENABLED_VALIDATOR);
+            VALIDATORS.put(CALL_CONNECTED_TONE_ENABLED, CALL_CONNECTED_TONE_ENABLED_VALIDATOR);
             VALIDATORS.put(LOCKSCREEN_DISABLED, LOCKSCREEN_DISABLED_VALIDATOR);
             VALIDATORS.put(SIP_RECEIVE_CALLS, SIP_RECEIVE_CALLS_VALIDATOR);
             VALIDATORS.put(SIP_CALL_OPTIONS, SIP_CALL_OPTIONS_VALIDATOR);
@@ -9263,6 +9276,14 @@ public final class Settings {
         private static final Validator AWARE_LOCK_ENABLED_VALIDATOR = BOOLEAN_VALIDATOR;
 
         /**
+         * Controls whether tap gesture is enabled.
+         * @hide
+         */
+        public static final String TAP_GESTURE = "tap_gesture";
+
+        private static final Validator TAP_GESTURE_VALIDATOR = BOOLEAN_VALIDATOR;
+
+        /**
          * This are the settings to be backed up.
          *
          * NOTE: Settings are backed up and restored in the order they appear
@@ -9343,8 +9364,6 @@ public final class Settings {
             DOZE_PICK_UP_GESTURE,
             DOZE_DOUBLE_TAP_GESTURE,
             DOZE_TAP_SCREEN_GESTURE,
-            DOZE_WAKE_LOCK_SCREEN_GESTURE,
-            DOZE_WAKE_DISPLAY_GESTURE,
             NFC_PAYMENT_DEFAULT_COMPONENT,
             AUTOMATIC_STORAGE_MANAGER_DAYS_TO_RETAIN,
             FACE_UNLOCK_KEYGUARD_ENABLED,
@@ -9352,9 +9371,6 @@ public final class Settings {
             FACE_UNLOCK_DISMISSES_KEYGUARD,
             FACE_UNLOCK_APP_ENABLED,
             FACE_UNLOCK_ALWAYS_REQUIRE_CONFIRMATION,
-            ASSIST_GESTURE_ENABLED,
-            ASSIST_GESTURE_SILENCE_ALERTS_ENABLED,
-            ASSIST_GESTURE_WAKE_ENABLED,
             VR_DISPLAY_MODE,
             NOTIFICATION_BADGING,
             NOTIFICATION_DISMISS_RTL,
@@ -9388,12 +9404,9 @@ public final class Settings {
             TRUST_AGENTS_EXTEND_UNLOCK,
             UI_NIGHT_MODE,
             LOCK_SCREEN_WHEN_TRUST_LOST,
-            SKIP_GESTURE,
             SKIP_DIRECTION,
-            SILENCE_GESTURE,
             THEME_CUSTOMIZATION_OVERLAY_PACKAGES,
             NAVIGATION_MODE,
-            AWARE_ENABLED,
             SKIP_GESTURE_COUNT,
             SKIP_TOUCH_COUNT,
             SILENCE_ALARMS_GESTURE_COUNT,
@@ -9603,6 +9616,7 @@ public final class Settings {
             VALIDATORS.put(AWARE_LOCK_ENABLED, AWARE_LOCK_ENABLED_VALIDATOR);
             VALIDATORS.put(AWARE_TAP_PAUSE_GESTURE_COUNT, NON_NEGATIVE_INTEGER_VALIDATOR);
             VALIDATORS.put(AWARE_TAP_PAUSE_TOUCH_COUNT, NON_NEGATIVE_INTEGER_VALIDATOR);
+            VALIDATORS.put(TAP_GESTURE, TAP_GESTURE_VALIDATOR);
         }
 
         /**
@@ -10176,12 +10190,33 @@ public final class Settings {
          * List of ISO country codes in which eUICC UI is shown. Country codes should be separated
          * by comma.
          *
-         * <p>Used to hide eUICC UI from users who are currently in countries no carriers support
-         * eUICC.
+         * Note: if {@link #EUICC_SUPPORTED_COUNTRIES} is empty, then {@link
+         * #EUICC_UNSUPPORTED_COUNTRIES} is used.
+         *
+         * <p>Used to hide eUICC UI from users who are currently in countries where no carriers
+         * support eUICC.
+         *
          * @hide
          */
         //TODO(b/77914569) Changes this to System Api.
         public static final String EUICC_SUPPORTED_COUNTRIES = "euicc_supported_countries";
+
+        /**
+         * List of ISO country codes in which eUICC UI is not shown. Country codes should be
+         * separated by comma.
+         *
+         * Note: if {@link #EUICC_SUPPORTED_COUNTRIES} is empty, then {@link
+         * #EUICC_UNSUPPORTED_COUNTRIES} is used.
+         *
+         * <p>Used to hide eUICC UI from users who are currently in countries where no carriers
+         * support eUICC.
+         *
+         * @hide
+         */
+        //TODO(b/77914569) Changes this to System Api.
+        public static final String EUICC_UNSUPPORTED_COUNTRIES = "euicc_unsupported_countries";
+        private static final Validator EUICC_UNSUPPORTED_COUNTRIES_VALIDATOR =
+                new SettingsValidators.ComponentNameListValidator(",");
 
         /**
          * Whether any activity can be resized. When this is true, any
@@ -14277,6 +14312,7 @@ public final class Settings {
             VALIDATORS.put(DYNAMIC_POWER_SAVINGS_DISABLE_THRESHOLD,
                     DYNAMIC_POWER_SAVINGS_VALIDATOR);
             VALIDATORS.put(BLUETOOTH_ON, BLUETOOTH_ON_VALIDATOR);
+            VALIDATORS.put(EUICC_UNSUPPORTED_COUNTRIES, EUICC_UNSUPPORTED_COUNTRIES_VALIDATOR);
             VALIDATORS.put(PRIVATE_DNS_MODE, PRIVATE_DNS_MODE_VALIDATOR);
             VALIDATORS.put(PRIVATE_DNS_SPECIFIER, PRIVATE_DNS_SPECIFIER_VALIDATOR);
             VALIDATORS.put(SOFT_AP_TIMEOUT_ENABLED, SOFT_AP_TIMEOUT_ENABLED_VALIDATOR);
